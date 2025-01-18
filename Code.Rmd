@@ -1,0 +1,96 @@
+---
+title: "STAT project"
+output: html_document
+date: "2024-12-02"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+Fruit_Prices <- read.csv("~/Desktop/STAT 240/data/Fruit-Prices-2022.csv")
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+```{r}
+Fruit_Prices %>% group_by(Form) %>% 
+  summarize(avgRetailPrice = mean(RetailPrice)) %>%
+  ggplot(aes(x=reorder(Form, avgRetailPrice),y=avgRetailPrice,fill=Form))+geom_bar(stat = "identity")+labs(x = "Form of Fruit", y = "Average Retail Price", title = "Average Retail Price by Form of Fruit")
+```
+
+```{r}
+Fruit_Prices_Fresh <- Fruit_Prices %>% group_by(Form) %>% select(Fruit, Form, RetailPrice) %>% filter(Form == "Fresh") %>% mutate(mean = mean(RetailPrice))
+Fruit_Prices_Fresh
+fresh <- Fruit_Prices_Fresh %>% filter(Fruit %in% c('Apples','Apricots','Cherries','Peaches','Pears','Pineapple'))
+```
+
+```{r}
+Fruit_Prices_Canned <- Fruit_Prices %>% group_by(Form) %>% select(Fruit, Form, RetailPrice) %>% filter(Form == "Canned") %>% mutate(mean = mean(RetailPrice))
+Fruit_Prices_Canned
+canned <- Fruit_Prices_Canned %>% filter(!Fruit %in% c('Fruit cocktail, packed in juice','Fruit cocktail, packed in syrup or water'))
+```
+
+```{r}
+x_bar <- 2.440725	
+y_bar <- 2.243925	
+PE <- x_bar - y_bar
+n_x <- 24
+n_y <- 12
+s_x <- sd(Fruit_Prices_Fresh$RetailPrice)
+s_y <- sd(Fruit_Prices_Canned$RetailPrice)
+
+df <- (((s_x^2 / n_x) + (s_y^2/n_y))^2) / (((s_x^2 / n_x)^2 / (n_x - 1)) + ((s_y^2/n_y)^2 / (n_y - 1))) 
+t <- PE/(sqrt(((s_x)^2 / n_x) + ((s_y)^2/n_y)))
+t
+2 * pt(-abs(t), 33.632)
+
+```
+
+```{r}
+
+```
+
+
+```{r}
+canned = Fruit_Prices_Canned$RetailPrice
+fresh = Fruit_Prices_Fresh$RetailPrice
+t.test(canned, fresh, 'two.sided')
+```
+
+```{r}
+data_combined <- rbind(fresh, canned)
+
+# Create the paired dot plot with mean as a horizontal line
+ggplot(data_combined, aes(x = Fruit, group = Form)) +
+  geom_point(aes(y = RetailPrice, color = Form), size = 3) +
+  geom_line(aes(y = RetailPrice, group = Fruit), color = "gray", linetype = "dashed") +
+  geom_hline(data = data_combined %>% distinct(Fruit, mean), 
+             aes(yintercept = mean, color = Form), linetype = "solid", size = 1) +
+  labs(
+    title = "Paired Dot Plot of Retail Prices and Mean Prices for Fresh and Canned Fruits",
+    x = "Fruit",
+    y = "Price ($)",
+    color = "Fruit Form"
+  ) +
+  scale_color_manual(values = c("Fresh" = "skyblue", "Canned" = "darkred")) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
